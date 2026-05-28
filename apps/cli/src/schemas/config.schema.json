@@ -1,0 +1,117 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://abstack.dev/schemas/config.schema.json",
+	"title": "Abstack Configuration",
+	"description": "Configuration schema for abstack.json / abstack.jsonc",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"$schema": {
+			"type": "string",
+			"description": "JSON Schema reference URI"
+		},
+		"agents": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"mcp": {
+					"type": "array",
+					"items": {
+						"type": "string",
+						"enum": [
+							"expect",
+							"codedb",
+							"githits",
+							"playwright",
+							"filesystem",
+							"github",
+							"memory"
+						]
+					},
+					"uniqueItems": true
+				}
+			}
+		},
+		"conformance": {
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"overrides": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"additionalProperties": false,
+						"required": ["id", "reason"],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "Unique identifier for the overridden rule"
+							},
+							"reason": {
+								"type": "string",
+								"description": "Explanation for why the override exists"
+							},
+							"severity": {
+								"type": "string",
+								"enum": ["off", "warn", "error"],
+								"description": "Override severity level"
+							}
+						}
+					}
+				},
+				"template": {
+					"type": "string",
+					"description": "Conformance template name"
+				}
+			}
+		},
+		"formatter": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["biome", "prettier"]
+			},
+			"uniqueItems": true
+		},
+		"ide": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["zed", "vscode", "cursor", "windsurf"]
+			},
+			"uniqueItems": true
+		},
+		"linter": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["biome", "eslint", "oxlint"]
+			},
+			"uniqueItems": true
+		},
+		"lsp": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["typescript", "gopls", "rust-analyzer", "pyright"]
+			},
+			"uniqueItems": true
+		},
+		"staticAnalysis": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["typescript", "oxlint"]
+			},
+			"uniqueItems": true
+		},
+		"test": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"enum": ["bun", "vitest", "jest", "pytest"]
+			},
+			"uniqueItems": true
+		}
+	}
+}

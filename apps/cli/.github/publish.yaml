@@ -1,0 +1,77 @@
+# Publishes via npm Trusted Publishing (OIDC). No NPM_TOKEN on publish step.
+# Requires: package Settings on npmjs.com → Trusted publisher → this repo + publish.yml
+# If you set an Environment on npm, uncomment `environment:` below and match the name.
+
+name: Publish to npm
+
+on:
+    push:
+        branches:
+            - production
+    workflow_dispatch:
+
+concurrency:
+    group: npm-publish-${{ github.ref }}
+    cancel-in-progress: false
+
+permissions:
+    id-token: write # required for OIDC → npm
+    contents: read
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        # environment: npm   # uncomment if npm Trusted Publisher lists a GitHub Environment name
+
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v4
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "22.14"
+                  cache: npm
+                  registry-url: https://registry.npmjs.org
+
+            - name: Ensure npm CLI supports OIDC publish
+              run: npm install -g npm@^11.5.1
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run tests
+              run: npm test
+
+            - name: Build package
+              run: npm run build
+
+            - name: Resolve package metadata
+              id: package
+              run: |
+                  echo "name=$(node -p "require('./package.json').name")" >> "$GITHUB_OUTPUT"
+                  echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+            - name: Check whether this version is already published
+              id: npm
+              run: |
+                  if npm view "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }}" version >/dev/null 2>&1; then
+                    echo "already_published=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "already_published=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            # --provenance triggers the OIDC publish path (see npm/cli#8730)
+            - name: Publish package (OIDC)
+              if: steps.npm.outputs.already_published != 'true'
+              run: npm publish --access public --provenance
+
+            - name: Summarize skipped publish
+              if: steps.npm.outputs.already_published == 'true'
+              run: |
+                  echo "Skipped publish because ${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} is already on npm." >> "$GITHUB_STEP_SUMMARY"
+
+            - name: Summarize published version
+              if: steps.npm.outputs.already_published != 'true'
+              run: |
+                  echo "Published ${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} to npm (Trusted Publishing)." >> "$GITHUB_STEP_SUMMARY"
